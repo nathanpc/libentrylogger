@@ -37,6 +37,7 @@ typedef enum {
 /* Field types. */
 typedef enum {
 	EL_FIELD_INT = 0,
+	EL_FIELD_FLOAT,
 	EL_FIELD_STRING
 } el_type_t;
 
@@ -52,7 +53,8 @@ typedef struct {
 	el_field_def_t *field;
 
 	union {
-		int integer;
+		long integer;
+		float number;
 		char *string;
 		void *pointer;
 	} value;
@@ -87,7 +89,12 @@ eld_handle_t *el_doc_new(void);
 el_err_t el_doc_fopen(eld_handle_t *doc, const char *fname, const char *fmode);
 el_err_t el_doc_fclose(eld_handle_t *doc);
 el_err_t el_doc_free(eld_handle_t *doc);
+el_err_t el_doc_save(eld_handle_t *doc, const char *fname);
 el_err_t el_doc_parse_header(eld_handle_t *doc);
+el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field);
+
+/* Header operations. */
+el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t length);
 
 /* Error handling. */
 const char *el_error_msg(void);

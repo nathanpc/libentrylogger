@@ -38,6 +38,7 @@ size_t el_util_strcpy(char **dest, const char *src);
 size_t el_util_strstrcpy(char **dest, const char *start, const char *end);
 void el_util_calc_header_len(eld_handle_t *doc);
 void el_util_calc_row_len(eld_handle_t *doc);
+uint16_t el_util_sizeof(el_type_t type);
 void el_error_free(void);
 void el_error_msg_set(const char *msg);
 void el_error_msg_format(const char *format, ...);
@@ -47,6 +48,7 @@ void el_error_msg_format(const char *format, ...);
  * @warning This function allocates memory that you are responsible for freeing.
  *
  * @return A brand new allocated EntryLogger document handle object.
+ *
  * @see el_doc_free
  */
 eld_handle_t *el_doc_new(void) {
@@ -126,6 +128,10 @@ el_err_t el_doc_fopen(eld_handle_t *doc, const char *fname, const char *fmode) {
  * @see el_doc_free
  */
 el_err_t el_doc_fclose(eld_handle_t *doc) {
+	/* Do we even have anything to do? */
+	if (doc->fh == NULL)
+		return EL_OK;
+
 	/* Try to close the file handle. */
 	if (fclose(doc->fh) != 0) {
 		el_error_msg_format(EMSG("Couldn't close file \"%s\": %s."),
@@ -165,6 +171,38 @@ el_err_t el_doc_free(eld_handle_t *doc) {
 }
 
 /**
+ * Saves changes in a document to a file.
+ *
+ * @param doc   Pointer to a EntryLogger document handle object.
+ * @param fname Document file path.
+ *
+ * @return EL_OK if the operation was successful.
+ *         EL_ERROR_FILE if an error occurred while operating on the file.
+ *
+ * @see el_doc_free
+ */
+el_err_t el_doc_save(eld_handle_t *doc, const char *fname) {
+	el_err_t err;
+
+	/* Open the document. */
+	err = el_doc_fopen(doc, fname, "wb");
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Write the header to the file. */
+	fwrite(&(doc->header), sizeof(eld_header_t), 1, doc->fh);
+
+	/* Write field definitions to the file. */
+	fwrite(doc->field_defs, sizeof(el_field_def_t),
+		   doc->header.field_desc_count, doc->fh);
+
+	/* Close the document and return. */
+	err = el_doc_fclose(doc);
+	return err;
+}
+
+/**
  * Parses a document's header.
  *
  * @param doc Opened document handle.
@@ -174,6 +212,53 @@ el_err_t el_doc_free(eld_handle_t *doc) {
  */
 el_err_t el_doc_parse_header(eld_handle_t *doc) {
 	return EL_ERROR_NOT_IMPL;
+}
+
+/**
+ * Append a field definition to the document header.
+ *
+ * @param doc   Document handle.
+ * @param field Field definition to be appended to the document.
+ *
+ * @return EL_OK if the operation was successful.
+ */
+el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field) {
+	/* Make room for our new field definition. */
+	doc->header.field_desc_count++;
+	doc->field_defs = (el_field_def_t *)realloc(
+		doc->field_defs, sizeof(el_field_def_t) * doc->header.field_desc_count);
+
+	/* Copy the field over. */
+	doc->field_defs[doc->header.field_desc_count - 1] = field;
+
+	/* Re-calculate lengths. */
+	el_util_calc_header_len(doc);
+	el_util_calc_row_len(doc);
+
+	return EL_OK;
+}
+
+/**
+ * Creates a brand new field definition.
+ *
+ * @param type   Type of the field data.
+ * @param name   Name of the field.
+ * @param length Length of the field. Set to 1 always, except for strings.
+ *
+ * @return A populated field definition structure.
+ */
+el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t length) {
+	el_field_def_t field;
+
+	/* Set the basics. */
+	field.type = (uint8_t)type;
+	field.size_bytes = el_util_sizeof(type) * length;
+
+	/* Copy the name over. */
+	memset(field.name, '\0', EL_FIELD_NAME_LEN + 1);
+	strncpy(field.name, name, EL_FIELD_NAME_LEN);
+
+	return field;
 }
 
 /**
@@ -210,6 +295,26 @@ void el_util_calc_row_len(eld_handle_t *doc) {
 	for (i = 0; i < doc->header.field_desc_count; i++) {
 		doc->header.row_len += doc->field_defs[i].size_bytes;
 	}
+}
+
+/**
+ * Gets the size of a single instance of a type of variable in bytes.
+ *
+ * @param type Type of variable.
+ *
+ * @return Length in bytes that a single instance of this type occupies.
+ */
+uint16_t el_util_sizeof(el_type_t type) {
+	switch (type) {
+		case EL_FIELD_INT:
+			return sizeof(long);
+		case EL_FIELD_FLOAT:
+			return sizeof(float);
+		case EL_FIELD_STRING:
+			return sizeof(char);
+	}
+
+	return 0;
 }
 
 /**
