@@ -50,15 +50,22 @@ int main(int argc, char **argv) {
 		error_cleanup(doc);
 		return err;
 	}
-	printf("Document successfully parsed.\n");
+	printf("Document header successfully parsed.\n\n");
 
 	/* Print the field definitions. */
-	printf("Got %u field definitions!\n", doc->header.field_desc_count);
+	printf("Got %u field definitions! (%u bytes each)\n",
+		   doc->header.field_desc_count, doc->header.field_desc_len);
 	for (i = 0; i < doc->header.field_desc_count; i++) {
 		el_field_def_t field = doc->field_defs[i];
 		printf("\t%u %s [%u] (%u bytes)\n", field.type, field.name,
 			   field.size_bytes / el_util_sizeof(field.type), field.size_bytes);
 	}
+	printf("Header currently using %u bytes.\n\n",
+		   doc->header.header_len);
+
+	/* Print the rows. */
+	printf("Got %u rows! (%u bytes each)\n", doc->header.row_count,
+		   doc->header.row_len);
 
 quit:
 	/* Close everything up. */
