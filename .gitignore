@@ -1,3 +1,6 @@
+# EntryLogger document files.
+*.eld
+
 # Object and executable files.
 build/
 *.obj
