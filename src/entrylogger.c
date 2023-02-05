@@ -204,7 +204,7 @@ el_err_t el_doc_read(eld_handle_t *doc, const char *fname) {
 }
 
 /**
- * Saves changes in a document to a file.
+ * Saves changes to a document header to a file.
  *
  * @param doc   Pointer to a EntryLogger document handle object.
  * @param fname Document file path.
@@ -218,9 +218,13 @@ el_err_t el_doc_save(eld_handle_t *doc, const char *fname) {
 	el_err_t err;
 
 	/* Open the document. */
-	err = el_doc_fopen(doc, fname, "wb");
+	err = el_doc_fopen(doc, fname, "r+b");
 	IF_EL_ERROR(err) {
-		return err;
+		/* Try to create a new file if that was the previous issue. */
+		err = el_doc_fopen(doc, fname, "wb");
+		IF_EL_ERROR(err) {
+			return err;
+		}
 	}
 
 	/* Write the header to the file. */
