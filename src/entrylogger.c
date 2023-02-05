@@ -34,11 +34,11 @@
 static char *el_error_msg_buf = NULL;
 
 /* Private methods. */
+el_err_t el_doc_header_read(eld_handle_t *doc);
 size_t el_util_strcpy(char **dest, const char *src);
 size_t el_util_strstrcpy(char **dest, const char *start, const char *end);
 void el_util_calc_header_len(eld_handle_t *doc);
 void el_util_calc_row_len(eld_handle_t *doc);
-uint16_t el_util_sizeof(el_type_t type);
 void el_error_free(void);
 void el_error_msg_set(const char *msg);
 void el_error_msg_format(const char *format, ...);
@@ -84,7 +84,8 @@ eld_handle_t *el_doc_new(void) {
  * Opens an existing or brand new EntryLogger document file.
  *
  * @param doc   Pointer to a EntryLogger document handle object.
- * @param fname Document file path.
+ * @param fname Document file path or NULL if we should use the one defined in
+ *              the object.
  * @param fmode File opening mode string. (see fopen)
  *
  * @return EL_OK if the operation was successful.
@@ -98,18 +99,21 @@ el_err_t el_doc_fopen(eld_handle_t *doc, const char *fname, const char *fmode) {
 		return EL_ERROR_FILE;
 	}
 
-	/* Allocate space for the filename and copy it over. */
-	doc->fname = (char *)realloc(doc->fname,
-								 (strlen(fname) + 1) * sizeof(char));
-	strcpy(doc->fname, fname);
+	/* Have we been provided a new file to open? */
+	if (fname != NULL) {
+		/* Allocate space for the filename and copy it over. */
+		doc->fname = (char *)realloc(doc->fname,
+									(strlen(fname) + 1) * sizeof(char));
+		strcpy(doc->fname, fname);
+	}
 
 	/* Set the file opening mode. */
-	strncpy(doc->fmode, fmode, 2);
+	strncpy(doc->fmode, fmode, 3);
 
 	/* Finally open the file. */
-	doc->fh = fopen(fname, fmode);
+	doc->fh = fopen(doc->fname, doc->fmode);
 	if (doc->fh == NULL) {
-		el_error_msg_format(EMSG("Couldn't open file \"%s\": %s."), fname,
+		el_error_msg_format(EMSG("Couldn't open file \"%s\": %s."), doc->fname,
 							strerror(errno));
 		return EL_ERROR_FILE;
 	}
@@ -171,6 +175,35 @@ el_err_t el_doc_free(eld_handle_t *doc) {
 }
 
 /**
+ * Reads the header and field definitions from a document file.
+ *
+ * @param doc   Pointer to a EntryLogger document handle object.
+ * @param fname Document file path.
+ *
+ * @return EL_OK if the operation was successful.
+ *         EL_ERROR_FILE if an error occurred while trying to read the file.
+ */
+el_err_t el_doc_read(eld_handle_t *doc, const char *fname) {
+	el_err_t err;
+
+	/* Open the document. */
+	err = el_doc_fopen(doc, fname, "rb");
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Read the header and definitions from the file. */
+	err = el_doc_header_read(doc);
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Close the document and return. */
+	err = el_doc_fclose(doc);
+	return err;
+}
+
+/**
  * Saves changes in a document to a file.
  *
  * @param doc   Pointer to a EntryLogger document handle object.
@@ -203,15 +236,24 @@ el_err_t el_doc_save(eld_handle_t *doc, const char *fname) {
 }
 
 /**
- * Parses a document's header.
+ * Parses a document's header and field definitions.
  *
  * @param doc Opened document handle.
  *
  * @return EL_OK if the operation was successful.
  *         EL_ERROR_FILE if something happened while trying to read the file.
  */
-el_err_t el_doc_parse_header(eld_handle_t *doc) {
-	return EL_ERROR_NOT_IMPL;
+el_err_t el_doc_header_read(eld_handle_t *doc) {
+	/* Read the header from the file. */
+	fread(&(doc->header), sizeof(eld_header_t), 1, doc->fh);
+
+	/* Allocate space for our field definitions and read them from the file. */
+	doc->field_defs = (el_field_def_t *)realloc(
+		doc->field_defs, sizeof(el_field_def_t) * doc->header.field_desc_count);
+	fread(doc->field_defs, sizeof(el_field_def_t),
+		  doc->header.field_desc_count, doc->fh);
+
+	return EL_OK;
 }
 
 /**

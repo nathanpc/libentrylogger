@@ -45,15 +45,7 @@ int main(int argc, char **argv) {
 	}
 
 	/* Open an EntryLogger document. */
-	err = el_doc_fopen(doc, argv[1], "rb");
-	IF_EL_ERROR(err) {
-		error_cleanup(doc);
-		return err;
-	}
-	printf("EntryLogger document \"%s\" opened.\n", argv[1]);
-
-	/* Parse the document. */
-	err = el_doc_parse_header(doc);
+	err = el_doc_read(doc, argv[1]);
 	IF_EL_ERROR(err) {
 		error_cleanup(doc);
 		return err;
@@ -64,7 +56,8 @@ int main(int argc, char **argv) {
 	printf("Got %u field definitions!\n", doc->header.field_desc_count);
 	for (i = 0; i < doc->header.field_desc_count; i++) {
 		el_field_def_t field = doc->field_defs[i];
-		printf("\t%u %s[%u]\n", field.type, field.name, field.size_bytes);
+		printf("\t%u %s [%u] (%u bytes)\n", field.type, field.name,
+			   field.size_bytes / el_util_sizeof(field.type), field.size_bytes);
 	}
 
 quit:

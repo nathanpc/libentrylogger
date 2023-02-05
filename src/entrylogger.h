@@ -89,12 +89,15 @@ eld_handle_t *el_doc_new(void);
 el_err_t el_doc_fopen(eld_handle_t *doc, const char *fname, const char *fmode);
 el_err_t el_doc_fclose(eld_handle_t *doc);
 el_err_t el_doc_free(eld_handle_t *doc);
+el_err_t el_doc_read(eld_handle_t *doc, const char *fname);
 el_err_t el_doc_save(eld_handle_t *doc, const char *fname);
-el_err_t el_doc_parse_header(eld_handle_t *doc);
 el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field);
 
 /* Header operations. */
 el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t length);
+
+/* Utilities. */
+uint16_t el_util_sizeof(el_type_t type);
 
 /* Error handling. */
 const char *el_error_msg(void);
