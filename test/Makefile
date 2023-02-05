@@ -29,12 +29,12 @@ $(PRJBUILDDIR)/%.o: %.c
 $(LIBENTRYLOGGER):
 	cd .. && $(MAKE)
 
-$(ELDEXAMPLE): compile
-	$(TARGET) -c $(ELDEXAMPLE)
+$(PRJBUILDDIR)/$(ELDEXAMPLE): compile
+	$(TARGET) -c $(PRJBUILDDIR)/$(ELDEXAMPLE)
 
 debug: CFLAGS += -g3 -DDEBUG
-debug: clean compile $(ELDEXAMPLE)
-	$(GDB) $(TARGET) $(ELDEXAMPLE)
+debug: clean compile $(PRJBUILDDIR)/$(ELDEXAMPLE)
+	$(GDB) $(TARGET) $(PRJBUILDDIR)/$(ELDEXAMPLE)
 
 memcheck: CFLAGS += -g3 -DDEBUG -DMEMCHECK
 memcheck: clean compile
@@ -42,10 +42,10 @@ memcheck: clean compile
 		--track-origins=yes --log-file=$(PRJBUILDDIR)/valgrind.log $(TARGET)
 	cat $(PRJBUILDDIR)/valgrind.log
 
-run: compile $(ELDEXAMPLE)
-	$(TARGET) $(ELDEXAMPLE)
+run: compile $(PRJBUILDDIR)/$(ELDEXAMPLE)
+	$(TARGET) $(PRJBUILDDIR)/$(ELDEXAMPLE)
 
-example: $(ELDEXAMPLE)
+example: $(PRJBUILDDIR)/$(ELDEXAMPLE)
 
 clean:
 	$(RM) $(OBJECTS)
