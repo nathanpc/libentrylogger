@@ -6,32 +6,35 @@
 include ../variables.mk
 
 # Directories and Paths
-LIBDIR      := ../$(SRCDIR)
-PRJBUILDDIR := ../$(BUILDDIR)
-LIBPICKLE   := $(PRJBUILDDIR)/lib$(PROJECT).a
+LIBDIR         := ../$(SRCDIR)
+PRJBUILDDIR    := ../$(BUILDDIR)
+LIBENTRYLOGGER := $(PRJBUILDDIR)/lib$(PROJECT).a
 
 # Sources and Objects
 SOURCES  = main.c
 OBJECTS := $(addprefix $(PRJBUILDDIR)/, $(patsubst %.c, %.o, $(SOURCES)))
 TARGET  := $(PRJBUILDDIR)/$(PROJECT)_test
 
-.PHONY: all compile run debug memcheck clean
+.PHONY: all compile run debug memcheck example clean
 all: compile
 
-compile: $(LIBPICKLE) $(TARGET)
+compile: $(LIBENTRYLOGGER) $(TARGET)
 
-$(TARGET): $(OBJECTS) $(LIBPICKLE)
+$(TARGET): $(OBJECTS) $(LIBENTRYLOGGER)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 $(PRJBUILDDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(LIBPICKLE):
+$(LIBENTRYLOGGER):
 	cd .. && $(MAKE)
 
+$(ELDEXAMPLE): compile
+	$(TARGET) -c $(ELDEXAMPLE)
+
 debug: CFLAGS += -g3 -DDEBUG
-debug: clean compile ../$(PKLEXAMPLE)
-	$(GDB) $(TARGET) ../$(PKLEXAMPLE)
+debug: clean compile $(ELDEXAMPLE)
+	$(GDB) $(TARGET) $(ELDEXAMPLE)
 
 memcheck: CFLAGS += -g3 -DDEBUG -DMEMCHECK
 memcheck: clean compile
@@ -39,8 +42,10 @@ memcheck: clean compile
 		--track-origins=yes --log-file=$(PRJBUILDDIR)/valgrind.log $(TARGET)
 	cat $(PRJBUILDDIR)/valgrind.log
 
-run: compile ../$(PKLEXAMPLE)
-	$(TARGET) ../$(PKLEXAMPLE)
+run: compile $(ELDEXAMPLE)
+	$(TARGET) $(ELDEXAMPLE)
+
+example: $(ELDEXAMPLE)
 
 clean:
 	$(RM) $(OBJECTS)

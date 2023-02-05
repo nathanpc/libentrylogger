@@ -10,7 +10,7 @@ SOURCES += $(SRCDIR)/entrylogger.c
 OBJECTS := $(patsubst $(SRCDIR)/%.c, $(BUILDDIR)/%.o, $(SOURCES))
 TARGET  := $(BUILDDIR)/lib$(PROJECT).a
 
-.PHONY: all compile compileall compiledb test debug memcheck clean
+.PHONY: all compile compileall compiledb test example debug memcheck clean
 all: compile
 
 compile: $(BUILDDIR)/stamp $(TARGET)
@@ -43,6 +43,9 @@ memcheck: clean compile
 
 test: compile
 	cd $(TESTDIR) && $(MAKE) run
+
+example: compile
+	cd $(TESTDIR) && $(MAKE) example
 
 clean:
 	$(RM) -r $(BUILDDIR)

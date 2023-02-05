@@ -13,7 +13,7 @@ PLATFORM := $(shell uname -s)
 SRCDIR     := src
 TESTDIR    := test
 BUILDDIR   := build
-PKLEXAMPLE ?= example.eld
+ELDEXAMPLE ?= example.eld
 
 # Tools
 CC    = gcc
