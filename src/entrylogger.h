@@ -56,9 +56,16 @@ typedef struct {
 		long integer;
 		float number;
 		char *string;
-		void *pointer;
 	} value;
 } el_cell_t;
+
+/* Row data abstraction. */
+typedef struct {
+	uint32_t index;
+	uint8_t cell_count;
+
+	el_cell_t *cells;
+} el_row_t;
 
 /* EntryLogger document header. */
 typedef struct {
@@ -92,9 +99,16 @@ el_err_t el_doc_free(eld_handle_t *doc);
 el_err_t el_doc_read(eld_handle_t *doc, const char *fname);
 el_err_t el_doc_save(eld_handle_t *doc, const char *fname);
 el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field);
+el_err_t el_doc_row_add(eld_handle_t *doc, const el_row_t *row);
+/*el_err_t el_doc_row_update(eld_handle_t *doc, el_row_t *row);*/
 
 /* Header operations. */
 el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t length);
+
+/* Row operations. */
+el_row_t *el_row_new(const eld_handle_t *doc);
+el_row_t *el_row_get(eld_handle_t *doc, uint32_t index);
+void el_row_free(el_row_t *row);
 
 /* Utilities. */
 uint16_t el_util_sizeof(el_type_t type);

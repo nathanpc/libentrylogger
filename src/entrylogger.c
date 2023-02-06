@@ -35,6 +35,8 @@ static char *el_error_msg_buf = NULL;
 
 /* Private methods. */
 el_err_t el_doc_header_read(eld_handle_t *doc);
+bool el_row_seek(eld_handle_t *doc, uint32_t index);
+el_err_t el_row_read(el_row_t *row, eld_handle_t *doc, uint32_t index);
 size_t el_util_strcpy(char **dest, const char *src);
 size_t el_util_strstrcpy(char **dest, const char *start, const char *end);
 void el_util_calc_header_len(eld_handle_t *doc);
@@ -207,7 +209,7 @@ el_err_t el_doc_read(eld_handle_t *doc, const char *fname) {
  * Saves changes to a document header to a file.
  *
  * @param doc   Pointer to a EntryLogger document handle object.
- * @param fname Document file path.
+ * @param fname Document file path or NULL if we should re-use the stored one.
  *
  * @return EL_OK if the operation was successful.
  *         EL_ERROR_FILE if an error occurred while operating on the file.
@@ -285,6 +287,69 @@ el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field) {
 }
 
 /**
+ * Appends a new row to the end of the file.
+ *
+ * @param doc Document object.
+ * @param row Row to be appended to the file.
+ *
+ * @return EL_OK if everything went fine.
+ *         EL_ERROR_FILE if an error occurred while operating on the file.
+ */
+el_err_t el_doc_row_add(eld_handle_t *doc, const el_row_t *row) {
+	el_err_t err;
+	uint8_t i;
+
+	/* Update the row count and re-calculate lengths for good measure. */
+	doc->header.row_count++;
+	el_util_calc_header_len(doc);
+	el_util_calc_row_len(doc);
+
+	/* Save the header changes. */
+	err = el_doc_save(doc, NULL);
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Open the document for appending. */
+	err = el_doc_fopen(doc, NULL, "a+b");
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Write row to the file. */
+	for (i = 0; i < row->cell_count; i++) {
+		size_t len;
+		el_cell_t cell = row->cells[i];
+
+		/* Write the cell. */
+		len = cell.field->size_bytes;
+		switch ((el_type_t)cell.field->type) {
+			case EL_FIELD_INT:
+				fwrite(&(cell.value.integer), len, 1, doc->fh);
+				break;
+			case EL_FIELD_FLOAT:
+				fwrite(&(cell.value.number), len, 1, doc->fh);
+				break;
+			case EL_FIELD_STRING:
+				fwrite(cell.value.string, len, 1, doc->fh);
+				break;
+		}
+
+		/* Check if the write operation was successful. */
+		if (ferror(doc->fh)) {
+			el_error_msg_format(
+				EMSG("Error occurred while trying to write cell %u at last "
+						"row: %s."), i, strerror(errno));
+			return EL_ERROR_FILE;
+		}
+	}
+
+	/* Close the document and return. */
+	err = el_doc_fclose(doc);
+	return err;
+}
+
+/**
  * Creates a brand new field definition.
  *
  * @param type   Type of the field data.
@@ -300,11 +365,225 @@ el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t lengt
 	field.type = (uint8_t)type;
 	field.size_bytes = el_util_sizeof(type) * length;
 
+	/* Make sure we allocate enough space for strings. */
+	if (field.type == EL_FIELD_STRING)
+		field.size_bytes += el_util_sizeof(type);
+
 	/* Copy the name over. */
 	memset(field.name, '\0', EL_FIELD_NAME_LEN + 1);
 	strncpy(field.name, name, EL_FIELD_NAME_LEN);
 
 	return field;
+}
+
+/**
+ * Creates a brand new allocated row object.
+ * @warning This function allocates memory that you are responsible for freeing.
+ *
+ * @param doc Document handle.
+ *
+ * @return Brand new allocated row object.
+ *
+ * @see el_row_get
+ */
+el_row_t *el_row_new(const eld_handle_t *doc) {
+	el_row_t *row;
+	uint8_t i;
+
+	/* Allocate memory for our row structure and populate some of it. */
+	row = (el_row_t *)malloc(sizeof(el_row_t));
+	row->index = doc->header.row_count;
+	row->cell_count = doc->header.field_desc_count;
+
+	/* Allocate memory for our cells and prepare them to receive data. */
+	row->cells = (el_cell_t *)malloc(sizeof(el_cell_t) * row->cell_count);
+	for (i = 0; i < row->cell_count; i++) {
+		el_cell_t *cell = &(row->cells[i]);
+
+		/* Populate the field definition. */
+		cell->field = &(doc->field_defs[i]);
+
+		/* Allocate space for types that need it. */
+		switch (cell->field->type) {
+			case EL_FIELD_STRING:
+				cell->value.string = (char *)malloc(cell->field->size_bytes);
+				memset(cell->value.string, '\0', cell->field->size_bytes);
+				break;
+			default:
+				break;
+		}
+	}
+
+	return row;
+}
+
+/**
+ * Seeks to the beginning of a row in the file given its index.
+ *
+ * @param doc   Opened document object.
+ * @param index Index of the row to seek to.
+ *
+ * @return TRUE if the operation was successful.
+ *         FALSE otherwise (check ferror for more information).
+ */
+bool el_row_seek(eld_handle_t *doc, uint32_t index) {
+	/* Determine the offset that the row is located at. */
+	long offset = doc->header.header_len + (doc->header.row_len * index);
+
+	/* Try to seek to the row offset. */
+	if (fseek(doc->fh, offset, SEEK_SET) != 0) {
+		el_error_msg_format(
+			EMSG("Couldn't seek in file \"%s\": %s."),
+			doc->fname, strerror(errno));
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Reads the contents of a row from the file into a row object.
+ * @warning This function allocates memory that you are responsible for freeing.
+ *
+ * @param row   Prepared row object.
+ * @param doc   Document object.
+ * @param index Index of the row to be read.
+ *
+ * @return EL_OK if everything went fine.
+ *         EL_ERROR_FILE if an error occurred while operating on the file.
+ *
+ * @see el_row_get
+ */
+el_err_t el_row_read(el_row_t *row, eld_handle_t *doc, uint32_t index) {
+	el_err_t err;
+	uint8_t i;
+
+	/* Open the document. */
+	err = el_doc_fopen(doc, NULL, "rb");
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Seek to the beginning of the rows section. */
+	if (!el_row_seek(doc, index))
+		return EL_ERROR_FILE;
+
+	/* Populate the cells */
+	for (i = 0; i < row->cell_count; i++) {
+		size_t len;
+		el_cell_t *cell = &(row->cells[i]);
+
+		/* Read the cell into our structure. */
+		len = cell->field->size_bytes;
+		switch ((el_type_t)cell->field->type) {
+			case EL_FIELD_INT:
+				fread(&(cell->value.integer), len, 1, doc->fh);
+				break;
+			case EL_FIELD_FLOAT:
+				fread(&(cell->value.number), len, 1, doc->fh);
+				break;
+			case EL_FIELD_STRING:
+				fread(cell->value.string, len, 1, doc->fh);
+				break;
+		}
+
+		/* Check if the read operation was successful. */
+		if (feof(doc->fh)) {
+			/* EOF reached. */
+			el_error_msg_format(
+				EMSG("End-of-file reached before we could finish reading "
+						"cell %u at row %lu."), i, index);
+			return EL_ERROR_FILE;
+		} else if (ferror(doc->fh)) {
+			/* Error reading. */
+			el_error_msg_format(
+				EMSG("Error occurred while trying to read cell %u at row "
+						"%lu: %s."), i, index, strerror(errno));
+			return EL_ERROR_FILE;
+		}
+	}
+
+	/* Close the document and return. */
+	err = el_doc_fclose(doc);
+	return err;
+}
+
+/**
+ * Gets a row from a document at a specified index.
+ * @warning This function allocates memory that you are responsible for freeing.
+ *
+ * @param doc   Document handle.
+ * @param index Index of the row.
+ *
+ * @return Requested row (allocated memory) or NULL if one wasn't found.
+ *
+ * @see el_row_new
+ */
+el_row_t *el_row_get(eld_handle_t *doc, uint32_t index) {
+	el_err_t err;
+	el_row_t *row;
+
+	/* Check if the index is valid. */
+	if (index >= doc->header.row_count) {
+		el_error_msg_format(EMSG("Requested index %lu is greater than the "
+								 "number of rows (%lu) in the document."),
+							index, doc->header.row_count);
+		return NULL;
+	}
+
+	/* Create a new row object and set its index. */
+	row = el_row_new(doc);
+	row->index = index;
+
+	/* Populate the row object with cells. */
+	err = el_row_read(row, doc, index);
+	IF_EL_ERROR(err) {
+		el_row_free(row);
+		return NULL;
+	}
+
+	return row;
+}
+
+/**
+ * Frees up any resources allocated by a row object.
+ *
+ * @param row Row object to be free'd.
+ */
+void el_row_free(el_row_t *row) {
+	uint8_t i;
+
+	/* Should we do anything? */
+	if (row == NULL)
+		return;
+
+	/* Free any cell contents that were allocated. */
+	for (i = 0; i < row->cell_count; i++) {
+		switch (row->cells[i].field->type) {
+			case EL_FIELD_STRING:
+				/* Strings are allocated */
+				free(row->cells[i].value.string);
+				row->cells[i].value.string = NULL;
+
+				break;
+			default:
+				break;
+		}
+	}
+
+	/* Ensure that all of our counters are reset. */
+	row->index = 0;
+	row->cell_count = 0;
+
+	/* Free the cells. */
+	if (row->cells == NULL)
+		return;
+	free(row->cells);
+	row->cells = NULL;
+
+	/* Free ourselves. */
+	free(row);
+	row = NULL;
 }
 
 /**

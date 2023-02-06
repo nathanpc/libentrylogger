@@ -100,22 +100,21 @@ void error_cleanup(eld_handle_t *doc) {
  */
 el_err_t create_doc(eld_handle_t *doc, const char *fname) {
 	el_err_t err;
+	el_row_t *row;
+	uint8_t i;
 
 	/* Add some sample fields. */
 	printf("Adding sample fields...\n");
 	err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_INT, "Integer", 1));
 	IF_EL_ERROR(err) {
-		error_cleanup(doc);
 		return err;
 	}
 	err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_FLOAT, "Float", 1));
 	IF_EL_ERROR(err) {
-		error_cleanup(doc);
 		return err;
 	}
 	err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_STRING, "String 10", 10));
 	IF_EL_ERROR(err) {
-		error_cleanup(doc);
 		return err;
 	}
 	printf("Finished adding sample fields.\n");
@@ -123,10 +122,29 @@ el_err_t create_doc(eld_handle_t *doc, const char *fname) {
 	/* Save the document. */
 	err = el_doc_save(doc, fname);
 	IF_EL_ERROR(err) {
-		error_cleanup(doc);
 		return err;
 	}
 	printf("EntryLogger document \"%s\" saved.\n", fname);
+
+	/* Add some rows to it. */
+	for (i = 1; i < 4; i++) {
+		/* Create new row. */
+		row = el_row_new(doc);
+		row->cells[0].value.integer = i * 123;
+		row->cells[1].value.number = i * 1.1f;
+		sprintf(row->cells[2].value.string, "Row %u", i);
+
+		/* Save it to the file. */
+		err = el_doc_row_add(doc, row);
+		IF_EL_ERROR(err) {
+			el_row_free(row);
+			return err;
+		}
+
+		/* Free our temporary row object. */
+		el_row_free(row);
+		printf("Row %u added to the file.\n", i);
+	}
 
 	return err;
 }
