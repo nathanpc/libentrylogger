@@ -112,6 +112,7 @@ void el_row_free(el_row_t *row);
 
 /* Utilities. */
 uint16_t el_util_sizeof(el_type_t type);
+bool el_util_file_exists(const char *fname);
 
 /* Error handling. */
 const char *el_error_msg(void);

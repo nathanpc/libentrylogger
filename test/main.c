@@ -66,6 +66,13 @@ int main(int argc, char **argv) {
 	/* Print the rows. */
 	printf("Got %u rows! (%u bytes each)\n", doc->header.row_count,
 		   doc->header.row_len);
+	for (i = 0; i < doc->header.row_count; i++) {
+		el_row_t *row = el_row_get(doc, i);
+		printf("\t%ld\t%f\t%s\n", row->cells[0].value.integer,
+			   row->cells[1].value.number, row->cells[2].value.string);
+	}
+	printf("Rows using %u bytes in total.\n", doc->header.row_count *
+		doc->header.row_len);
 
 quit:
 	/* Close everything up. */
@@ -103,28 +110,37 @@ el_err_t create_doc(eld_handle_t *doc, const char *fname) {
 	el_row_t *row;
 	uint8_t i;
 
-	/* Add some sample fields. */
-	printf("Adding sample fields...\n");
-	err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_INT, "Integer", 1));
-	IF_EL_ERROR(err) {
-		return err;
-	}
-	err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_FLOAT, "Float", 1));
-	IF_EL_ERROR(err) {
-		return err;
-	}
-	err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_STRING, "String 10", 10));
-	IF_EL_ERROR(err) {
-		return err;
-	}
-	printf("Finished adding sample fields.\n");
+	/* Check if the file already exists and open it. */
+	if (el_util_file_exists(fname)) {
+		err = el_doc_read(doc, fname);
+		IF_EL_ERROR(err) {
+			return err;
+		}
+		printf("Document header successfully parsed.\n\n");
+	} else {
+		/* Add some sample fields. */
+		printf("Adding sample fields...\n");
+		err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_INT, "Integer", 1));
+		IF_EL_ERROR(err) {
+			return err;
+		}
+		err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_FLOAT, "Float", 1));
+		IF_EL_ERROR(err) {
+			return err;
+		}
+		err = el_doc_field_add(doc, el_field_def_new(EL_FIELD_STRING, "String 10", 10));
+		IF_EL_ERROR(err) {
+			return err;
+		}
+		printf("Finished adding sample fields.\n");
 
-	/* Save the document. */
-	err = el_doc_save(doc, fname);
-	IF_EL_ERROR(err) {
-		return err;
+		/* Save the document. */
+		err = el_doc_save(doc, fname);
+		IF_EL_ERROR(err) {
+			return err;
+		}
+		printf("EntryLogger document \"%s\" saved.\n", fname);
 	}
-	printf("EntryLogger document \"%s\" saved.\n", fname);
 
 	/* Add some rows to it. */
 	for (i = 1; i < 4; i++) {

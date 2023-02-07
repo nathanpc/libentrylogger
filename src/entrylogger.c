@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /* Decorate the error message with more information. */
 #ifdef DEBUG
@@ -301,8 +302,6 @@ el_err_t el_doc_row_add(eld_handle_t *doc, const el_row_t *row) {
 
 	/* Update the row count and re-calculate lengths for good measure. */
 	doc->header.row_count++;
-	el_util_calc_header_len(doc);
-	el_util_calc_row_len(doc);
 
 	/* Save the header changes. */
 	err = el_doc_save(doc, NULL);
@@ -795,4 +794,15 @@ size_t el_util_strcpy(char **dest, const char *src) {
 	} while (*src_buf != '\0');
 
 	return len;
+}
+
+/**
+ * Checks if a file exists in the file system.
+ *
+ * @param fname File path to be checked.
+ *
+ * @return Does this file exist?
+ */
+bool el_util_file_exists(const char *fname) {
+	return access(fname, F_OK) == 0;
 }
