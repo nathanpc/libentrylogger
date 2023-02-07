@@ -5,6 +5,7 @@
  * @author Nathan Campos <nathan@innoveworkshop.com>
  */
 
+#include <_types/_uint32_t.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +19,7 @@ el_err_t create_doc(eld_handle_t *doc, const char *fname);
 int main(int argc, char **argv) {
 	el_err_t err;
 	eld_handle_t *doc;
-	size_t i;
+	uint32_t i;
 
 	/* Quick argument check. */
 	if ((argc < 2) || (argc > 3)) {
@@ -161,6 +162,13 @@ el_err_t create_doc(eld_handle_t *doc, const char *fname) {
 		el_row_free(row);
 		printf("Row %u added to the file.\n", i);
 	}
+
+	/* Update a row just as a test. */
+	row = el_row_get(doc, 1);
+	row->cells[0].value.integer *= 2;
+	el_doc_row_update(doc, row);
+	el_row_free(row);
+	printf("Row 1 updated.\n");
 
 	return err;
 }

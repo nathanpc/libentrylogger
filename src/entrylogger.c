@@ -38,6 +38,7 @@ static char *el_error_msg_buf = NULL;
 el_err_t el_doc_header_read(eld_handle_t *doc);
 bool el_row_seek(eld_handle_t *doc, uint32_t index);
 el_err_t el_row_read(el_row_t *row, eld_handle_t *doc, uint32_t index);
+el_err_t el_doc_row_write(eld_handle_t *doc, const el_row_t *row);
 size_t el_util_strcpy(char **dest, const char *src);
 size_t el_util_strstrcpy(char **dest, const char *start, const char *end);
 void el_util_calc_header_len(eld_handle_t *doc);
@@ -288,34 +289,18 @@ el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field) {
 }
 
 /**
- * Appends a new row to the end of the file.
+ * Writes a row structure to the file at the current position.
  *
  * @param doc Document object.
- * @param row Row to be appended to the file.
+ * @param row Row to be written to the file.
  *
  * @return EL_OK if everything went fine.
  *         EL_ERROR_FILE if an error occurred while operating on the file.
  */
-el_err_t el_doc_row_add(eld_handle_t *doc, const el_row_t *row) {
-	el_err_t err;
+el_err_t el_doc_row_write(eld_handle_t *doc, const el_row_t *row) {
 	uint8_t i;
 
-	/* Update the row count and re-calculate lengths for good measure. */
-	doc->header.row_count++;
-
-	/* Save the header changes. */
-	err = el_doc_save(doc, NULL);
-	IF_EL_ERROR(err) {
-		return err;
-	}
-
-	/* Open the document for appending. */
-	err = el_doc_fopen(doc, NULL, "a+b");
-	IF_EL_ERROR(err) {
-		return err;
-	}
-
-	/* Write row to the file. */
+	/* Go through the cells writing them. */
 	for (i = 0; i < row->cell_count; i++) {
 		size_t len;
 		el_cell_t cell = row->cells[i];
@@ -338,9 +323,81 @@ el_err_t el_doc_row_add(eld_handle_t *doc, const el_row_t *row) {
 		if (ferror(doc->fh)) {
 			el_error_msg_format(
 				EMSG("Error occurred while trying to write cell %u at last "
-						"row: %s."), i, strerror(errno));
+					 "row: %s."),
+				i, strerror(errno));
 			return EL_ERROR_FILE;
 		}
+	}
+
+	return EL_OK;
+}
+
+/**
+ * Appends a new row to the end of the file.
+ *
+ * @param doc Document object.
+ * @param row Row to be appended to the file.
+ *
+ * @return EL_OK if everything went fine.
+ *         EL_ERROR_FILE if an error occurred while operating on the file.
+ */
+el_err_t el_doc_row_add(eld_handle_t *doc, el_row_t *row) {
+	el_err_t err;
+
+	/* Update the new row index and the header row count. */
+	row->index = doc->header.row_count;
+	doc->header.row_count++;
+
+	/* Save the header changes. */
+	err = el_doc_save(doc, NULL);
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Open the document for appending. */
+	err = el_doc_fopen(doc, NULL, "a+b");
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Write row to the file. */
+	err = el_doc_row_write(doc, row);
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Close the document and return. */
+	err = el_doc_fclose(doc);
+	return err;
+}
+
+/**
+ * Updates an existing row in the file.
+ *
+ * @param doc Document object.
+ * @param row Row to be updated in the file.
+ *
+ * @return EL_OK if everything went fine.
+ *         EL_ERROR_FILE if an error occurred while operating on the file.
+ */
+el_err_t el_doc_row_update(eld_handle_t *doc, const el_row_t *row) {
+	el_err_t err;
+
+	/* Open the document for updating. */
+	err = el_doc_fopen(doc, NULL, "r+b");
+	IF_EL_ERROR(err) {
+		return err;
+	}
+
+	/* Seek to the right position. */
+	if (!el_row_seek(doc, row->index)) {
+		return EL_ERROR_FILE;
+	}
+
+	/* Write row to the file. */
+	err = el_doc_row_write(doc, row);
+	IF_EL_ERROR(err) {
+		return err;
 	}
 
 	/* Close the document and return. */

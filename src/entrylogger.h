@@ -99,8 +99,8 @@ el_err_t el_doc_free(eld_handle_t *doc);
 el_err_t el_doc_read(eld_handle_t *doc, const char *fname);
 el_err_t el_doc_save(eld_handle_t *doc, const char *fname);
 el_err_t el_doc_field_add(eld_handle_t *doc, el_field_def_t field);
-el_err_t el_doc_row_add(eld_handle_t *doc, const el_row_t *row);
-/*el_err_t el_doc_row_update(eld_handle_t *doc, el_row_t *row);*/
+el_err_t el_doc_row_add(eld_handle_t *doc, el_row_t *row);
+el_err_t el_doc_row_update(eld_handle_t *doc, const el_row_t *row);
 
 /* Header operations. */
 el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t length);
