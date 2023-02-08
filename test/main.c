@@ -5,9 +5,9 @@
  * @author Nathan Campos <nathan@innoveworkshop.com>
  */
 
-#include <_types/_uint32_t.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "../src/entrylogger.h"
