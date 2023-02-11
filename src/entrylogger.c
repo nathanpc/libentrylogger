@@ -5,14 +5,28 @@
  * @author Nathan Campos <nathan@innoveworkshop.com>
  */
 
+#ifdef __MSDOS__
+#include "bcshim.h"
+#include "entrylog.h"
+#else
 #include "entrylogger.h"
+#endif /* __MSDOS__ */
 
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __MSDOS__
+#include <io.h>
+#else
 #include <unistd.h>
+#endif /* __MSDOS__ */
+
+/* Ensure that we have F_OK defined. */
+#ifndef F_OK
+	#define F_OK 0
+#endif /* F_OK */
 
 /* Decorate the error message with more information. */
 #ifdef DEBUG

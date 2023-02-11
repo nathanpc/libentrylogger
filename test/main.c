@@ -7,10 +7,19 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <string.h>
+#ifdef __MSDOS__
+#include "bcshim.h"
+#else
+#include <stdint.h>
+#endif /* __MSDOS__ */
 
+#ifdef __MSDOS__
+#include "bcshim.h"
+#include "entrylog.h"
+#else
 #include "../src/entrylogger.h"
+#endif /* __MSDOS__ */
 
 /* Private methods. */
 void error_cleanup(eld_handle_t *doc);

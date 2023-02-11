@@ -8,13 +8,17 @@
 #ifndef _ENTRYLOGGER_H
 #define _ENTRYLOGGER_H
 
-#include <inttypes.h>
 #include <limits.h>
-#include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __MSDOS__
+#include "bcshim.h"
+#else
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#endif /* __MSDOS__ */
 
 #ifdef __cplusplus
 extern "C" {
