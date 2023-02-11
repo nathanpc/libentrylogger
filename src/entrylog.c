@@ -495,7 +495,7 @@ el_row_t *el_row_new(const eld_handle_t *doc) {
  */
 bool el_row_seek(eld_handle_t *doc, uint32_t index) {
 	/* Determine the offset that the row is located at. */
-	long offset = doc->header.header_len + (doc->header.row_len * index);
+	size_t offset = doc->header.header_len + (doc->header.row_len * index);
 
 	/* Try to seek to the row offset. */
 	if (fseek(doc->fh, offset, SEEK_SET) != 0) {
@@ -699,7 +699,7 @@ void el_util_calc_row_len(eld_handle_t *doc) {
 uint16_t el_util_sizeof(el_type_t type) {
 	switch (type) {
 		case EL_FIELD_INT:
-			return sizeof(long);
+			return sizeof(int32_t);
 		case EL_FIELD_FLOAT:
 			return sizeof(float);
 		case EL_FIELD_STRING:
