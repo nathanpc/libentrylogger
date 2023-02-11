@@ -6,7 +6,7 @@
 include variables.mk
 
 # Sources and Objects
-SOURCES += $(SRCDIR)/entrylogger.c
+SOURCES += $(SRCDIR)/entrylog.c
 OBJECTS := $(patsubst $(SRCDIR)/%.c, $(BUILDDIR)/%.o, $(SOURCES))
 TARGET  := $(BUILDDIR)/lib$(PROJECT).a
 

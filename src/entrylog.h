@@ -1,23 +1,34 @@
 /**
- * entrylogger.h
- * A library for parsing and easily working with EntryLogger documents.
+ * entrylog.h
+ * A library for parsing and easily working with Entrylog documents.
  *
  * @author Nathan Campos <nathan@innoveworkshop.com>
  */
 
-#ifndef _ENTRYLOGGER_H
-#define _ENTRYLOGGER_H
+#ifndef _ENTRYLOG_H
+#define _ENTRYLOG_H
 
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __MSDOS__
-#include "bcshim.h"
-#else
+#if !defined(__MSDOS__)
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
+#endif /* !__MSDOS__ */
+
+#ifdef __MSDOS__
+/* Integer types. */
+typedef unsigned char uint8_t;
+typedef unsigned int uint16_t;
+typedef unsigned long uint32_t;
+typedef long int32_t;
+
+/* Boolean. */
+typedef uint8_t bool;
+#define true 1
+#define false 0
 #endif /* __MSDOS__ */
 
 #ifdef __cplusplus
@@ -127,4 +138,4 @@ void el_error_print(void);
 }
 #endif
 
-#endif /* _ENTRYLOGGER_H */
+#endif /* _ENTRYLOG_H */

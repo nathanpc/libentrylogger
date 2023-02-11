@@ -1,6 +1,6 @@
-# EntryLogger for C
+# Entrylog Library for C
 
-A plain C89, single source/header, library for easily working with EntryLogger
+A plain C89, single source/header, library for easily working with Entrylog
 documents.
 
 ## Generating a Compilation Database
@@ -35,8 +35,8 @@ back as a sort of self-test.
 After all of that's done you'll have a couple of important files in your `build`
 directory:
 
-- `libentrylogger.a` A static library for linking against if desired.
-- `entrylogger_test` The example/test program that can create/edit/read ELD files.
+- `libentrylog.a` A static library for linking against if desired.
+- `entrylog_test` The example/test program that can create/edit/read ELD files.
 - `example.eld` An example document to play around with.
 
 ## Including in Projects

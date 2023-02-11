@@ -4,6 +4,7 @@
 		"compiledb",
 		"eldoc",
 		"EMSG",
+		"entrylog",
 		"entrylogger",
 		"libentrylogger",
 		"LINEBUF",

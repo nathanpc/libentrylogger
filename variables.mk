@@ -4,7 +4,7 @@
 ### Author: Nathan Campos <nathan@innoveworkshop.com>
 
 # Project
-PROJECT = entrylogger
+PROJECT = entrylog
 
 # Environment
 PLATFORM := $(shell uname -s)

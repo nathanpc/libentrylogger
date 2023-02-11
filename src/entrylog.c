@@ -1,16 +1,9 @@
 /**
- * entrylogger.c
- * A library for parsing and easily working with EntryLogger documents.
+ * entrylog.c
+ * A library for parsing and easily working with Entrylog documents.
  *
  * @author Nathan Campos <nathan@innoveworkshop.com>
  */
-
-#ifdef __MSDOS__
-#include "bcshim.h"
-#include "entrylog.h"
-#else
-#include "entrylogger.h"
-#endif /* __MSDOS__ */
 
 #include <errno.h>
 #include <stdarg.h>
@@ -22,6 +15,8 @@
 #else
 #include <unistd.h>
 #endif /* __MSDOS__ */
+
+#include "entrylog.h"
 
 /* Ensure that we have F_OK defined. */
 #ifndef F_OK
@@ -62,10 +57,10 @@ void el_error_msg_set(const char *msg);
 void el_error_msg_format(const char *format, ...);
 
 /**
- * Allocates a brand new EntryLogger document handle object.
+ * Allocates a brand new Entrylog document handle object.
  * @warning This function allocates memory that you are responsible for freeing.
  *
- * @return A brand new allocated EntryLogger document handle object.
+ * @return A brand new allocated Entrylog document handle object.
  *
  * @see el_doc_free
  */
@@ -100,9 +95,9 @@ eld_handle_t *el_doc_new(void) {
 }
 
 /**
- * Opens an existing or brand new EntryLogger document file.
+ * Opens an existing or brand new Entrylog document file.
  *
- * @param doc   Pointer to a EntryLogger document handle object.
+ * @param doc   Pointer to a Entrylog document handle object.
  * @param fname Document file path or NULL if we should use the one defined in
  *              the object.
  * @param fmode File opening mode string. (see fopen)
@@ -141,9 +136,9 @@ el_err_t el_doc_fopen(eld_handle_t *doc, const char *fname, const char *fmode) {
 }
 
 /**
- * Closes the file handle for a EntryLogger document.
+ * Closes the file handle for a Entrylog document.
  *
- * @param doc EntryLogger document object to have its file handle closed.
+ * @param doc Entrylog document object to have its file handle closed.
  *
  * @return EL_OK if the operation was successful.
  *         EL_ERROR_FILE if an error occurred while trying to close the file.
@@ -196,7 +191,7 @@ el_err_t el_doc_free(eld_handle_t *doc) {
 /**
  * Reads the header and field definitions from a document file.
  *
- * @param doc   Pointer to a EntryLogger document handle object.
+ * @param doc   Pointer to a Entrylog document handle object.
  * @param fname Document file path.
  *
  * @return EL_OK if the operation was successful.
@@ -225,7 +220,7 @@ el_err_t el_doc_read(eld_handle_t *doc, const char *fname) {
 /**
  * Saves changes to a document header to a file.
  *
- * @param doc   Pointer to a EntryLogger document handle object.
+ * @param doc   Pointer to a Entrylog document handle object.
  * @param fname Document file path or NULL if we should re-use the stored one.
  *
  * @return EL_OK if the operation was successful.

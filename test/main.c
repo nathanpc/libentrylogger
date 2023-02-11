@@ -8,18 +8,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef __MSDOS__
-#include "bcshim.h"
-#else
+#if !defined(__MSDOS__)
 #include <stdint.h>
-#endif /* __MSDOS__ */
+#endif /* !__MSDOS__ */
 
-#ifdef __MSDOS__
-#include "bcshim.h"
-#include "entrylog.h"
-#else
-#include "../src/entrylogger.h"
-#endif /* __MSDOS__ */
+#include "../src/entrylog.h"
 
 /* Private methods. */
 void error_cleanup(eld_handle_t *doc);
