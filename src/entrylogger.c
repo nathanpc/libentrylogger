@@ -83,9 +83,10 @@ eld_handle_t *el_doc_new(void) {
 	/* Reset header definition. */
 	doc->header.magic[0] = 'E';
 	doc->header.magic[1] = 'L';
-	doc->header.magic[2] = 'D';
-	doc->header.marker[0] = '-';
-	doc->header.marker[1] = '-';
+	doc->header.reserved[0] = '-';
+	doc->header.reserved[1] = '-';
+	doc->header.reserved[2] = '-';
+	doc->header.reserved[3] = '-';
 	doc->header.field_desc_len = sizeof(el_field_def_t);
 	doc->header.field_desc_count = 0;
 	doc->header.row_count = 0;
@@ -432,6 +433,7 @@ el_field_def_t el_field_def_new(el_type_t type, const char *name, uint16_t lengt
 	el_field_def_t field;
 
 	/* Set the basics. */
+	field.reserved = '@';
 	field.type = (uint8_t)type;
 	field.size_bytes = el_util_sizeof(type) * length;
 

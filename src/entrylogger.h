@@ -28,7 +28,7 @@ extern "C" {
 #define IF_EL_ERROR(err) if ((err) > EL_OK)
 
 /* Sizes definitions. */
-#define EL_FIELD_NAME_LEN 20
+#define EL_FIELD_NAME_LEN 19
 
 /* EntryLogger parser status codes. */
 typedef enum {
@@ -47,6 +47,7 @@ typedef enum {
 
 /* Field descriptor. */
 typedef struct {
+	char reserved;
 	uint8_t type;
 	uint16_t size_bytes;
 	char name[EL_FIELD_NAME_LEN + 1];
@@ -57,7 +58,7 @@ typedef struct {
 	el_field_def_t *field;
 
 	union {
-		long integer;
+		int32_t integer;
 		float number;
 		char *string;
 	} value;
@@ -73,7 +74,7 @@ typedef struct {
 
 /* EntryLogger document header. */
 typedef struct {
-	char magic[3];
+	char magic[2];
 
 	uint16_t header_len;
 	uint16_t row_len;
@@ -82,7 +83,7 @@ typedef struct {
 	uint8_t field_desc_count;
 	uint32_t row_count;
 
-	char marker[2];
+	char reserved[4];
 } eld_header_t;
 
 /* EntryLogger document handle. */

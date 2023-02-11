@@ -12,6 +12,7 @@
 typedef unsigned char uint8_t;
 typedef unsigned int uint16_t;
 typedef unsigned long uint32_t;
+typedef long int32_t;
 
 /* Boolean. */
 typedef uint8_t bool;
