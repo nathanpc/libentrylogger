@@ -854,12 +854,15 @@ size_t el_util_strcpy(char **dest, const char *src) {
 	/* Copy the new string over. */
 	dest_buf = *dest;
 	src_buf = src;
-	do {
+	while (*src_buf != '\0') {
 		*dest_buf = *src_buf;
 
 		src_buf++;
 		dest_buf++;
-	} while (*src_buf != '\0');
+	}
+
+	/* Ensure the NULL termination of the string. */
+	*dest_buf = '\0';
 
 	return len;
 }
